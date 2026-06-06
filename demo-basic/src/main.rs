@@ -4,6 +4,8 @@ mod l03_custom_type_demo;
 mod l04_var_bind_demo;
 mod l05_rust_type_demo;
 mod l06_onversion_demo;
+mod l07_express_demo;
+mod l08_control_flow_demo;
 
 use common;
 fn main() {
@@ -25,7 +27,11 @@ fn main() {
     // ============ 类型转换 demo 代码 ================
     // l05_rust_type_demo::run();
     // ============ 类型转换 demo 代码 ================
-    l06_onversion_demo::run();
+    // l06_onversion_demo::run();
+    // ============ 表达式 demo 代码 ================
+    // l07_express_demo::run();
+    // ============ 控制流 demo 代码 ================
+    l08_control_flow_demo::run();
 }
 
 

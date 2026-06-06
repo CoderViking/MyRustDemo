@@ -41,6 +41,79 @@ pub fn run() {
      * 但请注意，反过来并不成立：为你的类型实现 Into 不会自动为它提供 From 的实现。
      */
 
+    /**
+     * TryFrom 和 TryInto
+     * 与 From 和 Into 类似，TryFrom 和 TryInto 是用于类型转换的泛型特质。
+     * 与 From 和 Into 不同，TryFrom 和 TryInto 特质用于可能失败的转换，因此返回 Result。
+     */
+    // TryFrom
+    assert_eq!(EvenNumber::try_from(8), Ok(EvenNumber(8)));
+    assert_eq!(EvenNumber::try_from(5), Err(()));
+
+    // TryInto
+    let result: Result<EvenNumber, ()> = 8i32.try_into();
+    assert_eq!(result, Ok(EvenNumber(8)));
+    let result: Result<EvenNumber, ()> = 5i32.try_into();
+    assert_eq!(result, Err(()));
+
+    /**
+     * String 类型转换
+     * 将任何类型转换为String 只需要为该类型实现 ToString 特质即可。
+     * 但更友好的做法是实现 fmt::Display 特质，它不仅会自动提供 ToString，还允许打印该类型，就像在 println! 部分讨论的那样。
+     */
+
+    #[derive(Debug)]
+    struct Circle {
+        radius: f64,
+    }
+
+    impl fmt::Display for Circle {
+        fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+            write!(f, "圆的半径为: {}", self.radius)
+        }
+    }
+
+    let circle = Circle{ radius: 5.0 };
+    println!("{}", circle);
+    let circle_str = circle.to_string();
+    println!("circle_str = {}", circle_str);
+    let circle_str_append = format!("{} {}", "hello",circle_str);
+    println!("circle_str_append = {}", circle_str_append);
+
+    /**
+     * 解析字符串
+     * 将字符串转换为其他类型很有用，其中最常见的操作之一是将字符串转换为数字。
+     * 管用方法是使用 parse 函数，可以通过类型判断或使用 ‘涡轮鱼’ 语法指定要解析的类型。
+     * 只要为目标类型实现 FromStr 特质，就可以将字符串转换为指定类型。标准库中为许多类型实现了这个特质。
+     * 要在自定义类型上获得这个功能，只需要为该类型实现 FromStr 特质
+     */
+
+    // 文本中只能是纯数字，
+    // 例如：100_000， 这种文本则无法通过字符串直接转换成数字，需要先将下划线清除掉之后才可以转换;
+    // 还有科学计数法(1e5)也不支持直接转换为数字
+    let parsed: i32 = "50_000".replace("_", "").parse().unwrap();
+    println!("parsed Number = {}", parsed);
+    let turbo_parsed = "10678".parse::<i32>().unwrap();
+    println!("turbo_parsed Number = {}", turbo_parsed);
+
+    let sum = parsed + turbo_parsed;
+    println!("sum = {}", sum);
+
+    // 为自定义的类型实现 FromStr 特质
+    impl FromStr for Circle {
+        type Err = ParseFloatError;
+        fn from_str(s: &str) -> Result<Self, Self::Err> {
+            match s.trim().parse() {
+                Ok(num) => Ok(Circle{ radius: num }),
+                Err(e) => Err(e),
+            }
+        }
+    }
+
+    let radius = "  500.887";
+    let circle_parsed: Circle = radius.parse().unwrap();
+    println!("circle = {}", circle_parsed);
+
 }
 // 为自定义的类型实现类似的转换
 
@@ -55,7 +128,9 @@ impl From<i32> for Number {
     }
 }
 use std::convert::Into;
-
+use std::fmt;
+use std::num::ParseFloatError;
+use std::str::FromStr;
 // /// 实现 Into 时，不能已经实现了 From，因为新版本的Rust中实现From时已经实现了Into，因此再实现一次，会编译错误。
 // /// 因此不推荐再单独实现 Into，一般只需要实现 Into 即可
 // impl Into<Number> for i32 {
@@ -63,3 +138,20 @@ use std::convert::Into;
 //         Number { value: self }
 //     }
 // }
+
+#[derive(Debug, PartialEq)]
+struct EvenNumber(i32);
+
+// 为 EvenNumber 实现 TryFrom 函数
+impl TryFrom<i32> for EvenNumber {
+    type Error = ();
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        // 能被2整除的数可以正常转换，除此之外的数都返回失败
+        if value % 2 == 0 {
+            Ok(EvenNumber(value))
+        } else {
+            Err(())
+        }
+    }
+}
