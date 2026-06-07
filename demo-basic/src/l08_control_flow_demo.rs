@@ -28,6 +28,19 @@
 /// - iter 在每次迭代中借用集合的每个元素。因此，集合保持不变，并且在循环之后可以重复使用。
 /// - into_iter 这会消耗集合，使得在每次迭代中提供确切的数据。一旦集合被消耗，他就不再可用于重复使用，因为它已经在循环中被 “移动”了。
 /// - iter_mut 这会可变地借用集合的每个元素，允许再原地修改集合。
+/// ## match
+/// Rust 通过 match 关键字提供模式匹配，类似于 C 语言的 switch。
+/// 第一个匹配的分支会被求值，并且必须覆盖所有可能的值。
+/// ### 解构
+/// match 块可以以多种方式解构项
+/// - 元组
+/// - 数组/切片
+/// - 枚举
+/// - 指针/引用
+///     - 对于指针，需要区分解构和解引用，因为它们是不同的概念
+///         - 解构引用使用 *
+///         - 解构使用 & 、ref 和 ref mut
+/// - 结构体
 pub fn run () {
 
     let n = 500;
@@ -180,4 +193,143 @@ pub fn run () {
     // 类型的差异意味着可以执行不同的操作。
 
 
+    let number = 1;
+
+    println!("告诉我关于 {} 的信息", number);
+    match number {
+        // 匹配单个值
+        1 => println!("一!"),
+        // 匹配多个值
+        2 | 3 | 5 | 7 | 11 => println!("这是质数"),
+        // 匹配一个区间范围
+        13 .. 19 => println!("一个青少年"),
+        // 处理默认情况，match 语句中必须要有这个语句
+        _ => println!("没什么特别的"),
+    }
+
+    let boolean = true;
+    let binary = match boolean {
+        // match 的分支必须覆盖所有可能的值
+        false => 0,
+        true => 1,
+    };
+
+    println!("{} -> {}", boolean, binary);
+
+    // 元组可以在 match 中按如下方式解构：
+
+    // let triple = (0, -2, 4);
+    let triple = (1, -2, 2);
+
+    println!("告诉我关于 {:?} 的一切", triple);
+
+    // match 可用于解构元组
+    match triple {
+        // 解构第二和第三个元组
+        (0, y, z) => println!("第一个是: {}, y: {}, z: {}", 0, y, z),
+        (1, ..) => println!("第一个是 1, 其余的不重要"),
+        (.., 2) => println!("最后一个是2，其余的不重要"),
+        (3, .., 4) => println!("第一个是3， 最后一个是4， 其余的不重要"),
+        // .. 可用于忽略元组中的其余部分
+        _ => println!("它们是什么并不重要"),
+        // _ 表示不绑定值到变量
+    }
+    // 与元组类似，数组和切片也可以用这种方式解构：
+
+    let array = [-1, -2, 9];
+    println!("数组 array 的全部内容为: {:?}", array);
+
+    match array {
+        // 将第二和第三个元素分别绑定到相应的变量
+        [0, second, third] => println!("array[0] = 0，array[1]  = {}, array[2] = {}", second, third),
+        // 单个值可以用 _ 忽略
+        [1, _, third] => println!("array[0] = 1, array[2] = {}, array[1] 被忽略了", third),
+        // 多个值可以用 .. 忽略
+        [-1, second, ..] => println!("array[0] = -1, array[2] = {}, 其余的被忽略了", second),
+        // 下面的代码无法编译
+        // [-1, second] => println!("这段代码无法编译"),
+        // 将他们存储在另一个数组/切片中(类型取决于正在匹配的值的类型)
+        [3, second, tail@ ..] => println!("array[0] = 3, array[1] = {}, 其余元素是{:?}", second, tail),
+        // 结合这些模式，我们可以，例如，绑定第一个和最后一个值，并将其与的存储在一个单独的数组中
+        [first, middle @ .., last] => println!("array[0] = {}, 中间部分 = {:?}, array[2] = {}", first, middle, last),
+    }
+
+    // enum 枚举的解构方式类似
+    #[allow(dead_code)]
+    enum Color {
+        // 这三个仅通过名称指定
+        Red,
+        Blue,
+        Green,
+        // 这些同样将 u32 元组与不同的名称(颜色模型)关联
+        RGB(u32, u32, u32),
+        HSV(u32, u32, u32),
+        HSL(u32, u32, u32),
+        CMY(u32, u32, u32),
+        CMYK(u32, u32, u32, u32),
+    }
+
+    let color = Color::CMY(122, 17, 40);
+    let color = Color::Red;
+    let color = Color::HSL(252, 117, 240);
+    println!("这是什么颜色？");
+    // 可以使用 match 来解构 enum
+    match color {
+        Color::Red => println!("颜色是红色！"),
+        Color::Blue => println!("颜色是蓝色！"),
+        Color::Green => println!("颜色是绿色！"),
+        Color::RGB(r, g, b) => println!("红: {}, 绿: {}, 蓝: {}！", r, g, b),
+        Color::HSV(h, s, v) => println!("色相: {}, 饱和度: {}, 明度: {}!", h, s, v),
+        Color::HSL(h, s, l) => println!("色相: {}, 饱和度: {}, 亮度: {}!", h, s, l),
+        Color::CMY(c, m, y) => println!("青: {}, 品红: {}, 黄: {}!", c, m, y),
+        Color::CMYK(c, m, y, k) => println!("青: {}, 品红: {}, 黄: {}, 黑: {}!", c, m, y, k),
+        // 不需要其他分支，因为所有变体都以检查
+    }
+
+    // 对于指针，需要区分解构和解引用，因为它们是不同的概念，其用法与 C/C++ 等语言不同。
+    // - 解构引用使用 *
+    // - 解构使用 & 、ref 和 ref mut
+
+    // 分配一个 i32 类型的引用，用 & 表示
+    // 正在分配一个引用
+    let reference = &500;
+
+    match reference {
+        // 如果 reference 与 &val 进行模式匹配，结果就像这样：
+        // &i32
+        // &val
+        // 我们可以看到，如果去掉匹配的 & 那么， i32 应该被赋值给 val
+        &val => println!("通过解构获得的值: {:?}", val),
+    }
+
+    // 为了避免 & ，你可以在匹配前解引用
+    match *reference {
+        val => println!("通过解引用获得的值: {:?}", val),
+    }
+
+    // 如果一开始就没有引用怎么办？ reference 是一个 & 因为右侧已经是一个引用。
+    // 这不是一个引用，因为右侧不是引用。
+    let _not_a_reference = 300;
+
+    // Rust 提供 ref 正式为了这个目的，它修改了赋值，为元素创建了一个引用；
+    // 这个引用被赋值
+    let ref _is_a_reference = 8000;
+
+    // 相应的，通过定义两个没有引用的值，可以通过 ref 和 ref mut 获取引用
+    let value = 5;
+    let mut mut_value = 7;
+
+    // 使用 ref 关键字创建引用
+    match value {
+        ref r => println!("r = {}", r),
+    }
+
+    // 类似地使用 ref mut
+    match mut_value {
+        ref mut m => {
+            // 获得了一个引用，在我们能够对其进行任何添加操作之前，必须先解引用
+            *m += 10;
+            println!("我们加了10， mut_value = {}", m);
+        }
+    }
 }
