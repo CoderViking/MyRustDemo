@@ -332,4 +332,207 @@ pub fn run () {
             println!("我们加了10， mut_value = {}", m);
         }
     }
+    // 同样，结构体也可以按照如下方式解构
+    #[derive(Debug)]
+    struct Foo{
+        x: (u32, u32),
+        y: u32,
+    }
+
+    let foo = Foo { x: (3, 2), y: 3 };
+    println!("foo = {:?}", foo);
+
+    match  foo {
+        Foo {x:(1, b), y} => println!("x 的第一个元素是：1, b = {}, y = {}", b, y),
+        // 可以解构结构体并重命名变量
+        // 变量的顺序不重要
+        Foo {y :2, x:i} => println!("y 为 2, i = {:?}", i),
+        // 可以用 .. 忽略某些字段
+        Foo {y, ..} => println!("y = {}, x 的值我们不关心", y),
+
+        // 这会导致编译错误，因为模式中未提及变量 x
+        // Foo{ y} => println!("y = {}", y),
+    }
+
+    let faa = Foo { x: (1, 2), y: 3 };
+    // 解构结构体不一定需要 match 块
+    let Foo{x:x0,y:y0} = faa;
+    println!("外部：x0 = {x0:?}, y0 = {y0}");
+
+    // 解构也适合嵌套结构体
+    #[derive(Debug)]
+    struct Bar {
+        foo: Foo,
+    }
+
+    let bar = Bar {foo: faa};
+    println!("bar = {:?}", bar);
+    // 解构嵌套结构体
+    let Bar {foo:Foo {x: nested_x, y: nested_y}} = bar;
+    println!("嵌套：nested_x = {nested_x:?}, nested_y = {nested_y:?},");
+
+    // # 守卫
+    // match 分支可以使用守卫进行额外的筛选
+
+    enum Temperature {
+        Celsius(f32),
+        Fahrenheit(f32),
+    }
+
+    let temperature = Temperature::Celsius(32.0);
+    let temperature = Temperature::Fahrenheit(92.0);
+
+    match temperature {
+        Temperature::Celsius(t) if t > 30.0 => println!("{}°C高于 30°C", t),
+        Temperature::Celsius(t) => println!("{}°C 不高于30°C", t),
+        Temperature::Fahrenheit(t) if t > 86.0 => println!("{}°F 高于 86°F", t),
+        Temperature::Fahrenheit(t) => println!("{}°F 不高于 86°F", t),
+    }
+
+    // let number:u8 = 4 * 80; // 运行错误：边界溢出
+    let number:u8 = 80;
+
+    match number {
+        i if i == 0 => println!("零"),
+        i if i > 0 => println!("大于零"),
+        // 正常情况下，上面两种情况已经覆盖了 u8 类型的所有有效范围，但 rust 强制要求必须添加如下的意外情况模式语句，否则编译错误
+        _ => unreachable!("不应该出现的情况")
+    }
+
+    // # 绑定
+    // 间接访问变量时，无法在分支中使用该变量而不重新绑定。
+    // match 提供了 @ 符号，用于将值绑定到名称：
+
+    println!("告诉我你是什么类型的人");
+
+    match  age() {
+        0 => println!("我还没过第一个生日"),
+        // 直接使用  match 1..=12，这时判断匹配哪个模式，但无法确定具体的值是多少，
+        // 使用 if 守卫条件，则无法遍历所有的可能，
+        // 因此，使用 @ 符号将匹配的值绑定到变量 n上，就可以知道具体的值是多少了。
+        n @ 1 ..=12 => println!("我是{:?}岁的儿童", n),
+        n @ 13 ..=17 => println!("我是{:?}岁的青少年", n),
+        n @ (1 | 7 | 13 | 15) => println!("我是{:?}岁的青少年", n),
+        // 没有绑定，直接返回结果
+        n => println!("我是{:?}岁的成年人", n),
+    }
+    // 也可以用绑定来解构 enum 变体，例如：Option
+    match some_number() {
+        // 匹配确定数字
+        Some(n @ 52) => println!("答案是: {} ！", n),
+        // 匹配其他数字
+        Some(n) => println!("答案不是: {}", n),
+        // 其他任何情况
+        _ => println!("默认的其他情况"),
+    }
+
+    // if let
+    // 在某些情况下， 使用 match 匹配枚举会显得繁琐。例如：
+    let optional = Some(8);
+    
+    match optional {
+        Some(i ) => println!("这是一个很长的字符串，其中包括 {:?}",i),
+        // 这是必须的， 因为 match 要求穷举所有情况
+        _ => {}
+    }
+
+    // 以下都是Option<i32>类型
+    let number = Some(8);
+    let letter: Option<i32> = None;
+    let emoji: Option<i32> = None;
+
+    // if let 结构的含义是，如果 let 能够将 number 解构为 Some(i)，则执行代码块 {}
+    if let Some(i) = number {
+        println!("匹配到: {:?}", i);
+    }
+
+    // 如果需要指定匹配失败的场景，可以使用 else
+    if let Some(i) = letter {
+        println!("匹配到: {:?}", i);
+    } else {
+        // 解构失败，转到失败处理的场景
+        println!("没有匹配到数字，那就用一个字母吧！");
+    }
+
+    // 童工一个修改后的失败条件
+    let i_like_letters = false;
+
+    if let Some(i) = emoji {
+        println!("匹配到: {:?}", i);
+        //解构失败，评估 else if 条件，看是否应执行替代的失败分支
+    } else if i_like_letters {
+        println!("没有匹配到数字。那就用一个字母吧！");
+    } else {
+        // 条件判断为假。这个分支是默认情况
+        println!("我不喜欢字母。那就用个表情符号吧 :)！");
+    }
+    // 同样的，if let 可以用来匹配任何枚举值
+
+    enum Boo {
+        Bar,
+        Baz,
+        Qux(u32),
+    }
+    let a = Boo::Baz;
+    let b = Boo::Baz;
+    let c = Boo::Qux(100);
+
+    // 变量 a 匹配 Boo::Bar
+    if let Boo::Bar = a {
+        println!("a 是 foobar");
+    }
+
+    // 变量 b 不匹配 Boo::Bar
+    // 所以这里不会打印任何内容
+    if let Boo::Bar = b {
+        println!("b 是 foobar");
+    }
+
+    // 变量 c 匹配 Boo::Qux, 它包含一个值，类似于前面例子中的 Some()
+    if let Boo::Qux(value) = c {
+        println!("c 是 {}", value);
+    }
+
+    // if let 也可以进行绑定
+    if let Boo::Qux(x @ 100) = c {
+        println!("c 是一百");
+    }
+
+    // 挑战练习
+    enum Coo{
+        Bar
+    }
+
+    let a = Coo::Bar;
+    // 如果不加 let 直接使用 == 判读是否相等，则会编译错误：二元运算，
+    // if Coo::Bar == a {
+    // 改为使用 if let 组合，成功匹配
+    if let Coo::Bar = a {
+        println!("a 是 coo_bar");
+    }
+
+    // # let-else
+    // let-else语法允许可能失败的模式匹配像普通let一样绑定到变量当前的作用域，或在匹配失败时中断操作（如：break、return、panic!）
+
+
+    fn get_count_item(s:&str) -> (u64, &str){
+        let mut it = s.split(' ');
+        let (Some(count_str), Some(item)) = (it.next(), it.next()) else {
+            panic!("无法分割计数项对：'{s}'");
+        };
+        let Ok(count) = u64::from_str(count_str) else {
+            panic!("无法解析整数：'{count_str}'");
+        };
+        (count, item)
+    }
+
+    println!("执行结果：{:?}", get_count_item("3 chairs"));
+    assert_eq!(get_count_item("3 chairs"), (3, "chairs"));
+}
+use std::str::FromStr;
+fn age() -> u8 {
+    0
+}
+fn some_number() -> Option<u32> {
+    Some(520)
 }
