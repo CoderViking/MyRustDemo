@@ -6,6 +6,7 @@ mod l05_rust_type_demo;
 mod l06_onversion_demo;
 mod l07_express_demo;
 mod l08_control_flow_demo;
+mod l09_function_demo;
 
 use common;
 fn main() {
@@ -31,7 +32,9 @@ fn main() {
     // ============ 表达式 demo 代码 ================
     // l07_express_demo::run();
     // ============ 控制流 demo 代码 ================
-    l08_control_flow_demo::run();
+    // l08_control_flow_demo::run();
+    // ============ 函数 demo 代码 ================
+    l09_function_demo::run();
 }
 
 

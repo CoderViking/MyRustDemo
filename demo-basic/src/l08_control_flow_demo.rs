@@ -517,17 +517,71 @@ pub fn run () {
 
     fn get_count_item(s:&str) -> (u64, &str){
         let mut it = s.split(' ');
-        let (Some(count_str), Some(item)) = (it.next(), it.next()) else {
-            panic!("无法分割计数项对：'{s}'");
+        // let (Some(count_str), Some(item)) = (it.next(), it.next()) else {
+        //     panic!("无法分割计数项对：'{s}'");
+        // };
+        //
+        // let Ok(count) = u64::from_str(count_str) else {
+        //     panic!("无法解析整数：'{count_str}'");
+        // };
+        // (count, item)
+
+        // 名称绑定的区别是使其区别于 match 或 if let-else 表达式的主要特点。
+        // 在此之前，可能需要通过一些荣誉的重复和外部 let 来近似实现这些模式
+        let (count_str, item) = match (it.next(), it.next()) {
+            (Some(count_str), Some(item)) => (count_str, item),
+            _ => panic!("无法分割计数项对: '{s}'"),
         };
-        let Ok(count) = u64::from_str(count_str) else {
-            panic!("无法解析整数：'{count_str}'");
+        let count = if let Ok(count) = u64::from_str(count_str) {
+            count
+        } else {
+            panic!("无法解析整数: '{count_str}'");
         };
         (count, item)
     }
 
     println!("执行结果：{:?}", get_count_item("3 chairs"));
     assert_eq!(get_count_item("3 chairs"), (3, "chairs"));
+
+    // ## while let
+    // 与 if let 类似，while let 可以简化繁琐的 match 序列。
+    // 以下面的递增 i 为例：
+
+    // 创建 Option<i32> 类型的 optional
+    let mut optional = Some(0);
+    loop {
+        match optional {
+            Some(i ) => {
+                if i > 9 {
+                    println!("大于9，退出！");
+                    optional = None;
+                } else {
+                    println!("'i' 是 '{i:?}', 再试一次。");
+                    optional = Some(i + 1);
+                }
+            },
+            _ => {
+                break;
+            }
+        }
+    }
+
+    // 使用 while 可以让这个序列更简洁
+    let mut optional = Some(0);
+    // 这段代码的含义是： 当 let 将 optional 解构为 Some(i) 时，执行代码块 {} ，否则 break
+    while let Some(i) = optional {
+        if i > 9 {
+            println!("大于9，退出！");
+            optional = None;
+        } else {
+            println!("'i' 是 '{i:?}', 再试一次。");
+            optional = Some(i + 1);
+        }
+        // 这里减少了代码缩进，无需显式处理失败的情况
+        // 这里 while let 没有额外的 else/else if 子句，if let 是可以有的
+    }
+
+
 }
 use std::str::FromStr;
 fn age() -> u8 {
