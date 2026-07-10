@@ -2,5 +2,6 @@
 resolver = "3"
 members = [
     "common",
-    "demo-basic"
+    "demo-basic",
+    "demo-practice"
 ]
