@@ -1,4 +1,5 @@
 use std::fmt::{Debug, Display};
+use std::result;
 
 pub fn run() {
     let mut s = String::from("Hello");
@@ -72,6 +73,14 @@ pub fn run() {
     notify(&tweet);
     notify1(&tweet);
     // notify2(&tweet); // 如果没有为 Tweet数据结构实现 Debug trait，则会编译错误：没有为 `Tweet` 实现特征 `Debug` 
+
+    let string1 = String::from("abcd");
+    let result;
+    {
+        let string2 = String::from("xyz");
+        result = longest(string1.as_str(), string2.as_str()); // 调用的函数中显式使用'a 标注引用的生命周期，因此在函数中，会使用生命周期最短的那个引用作为返回值的生命周期，因此在这段代码外执行result的打印是，会出现生命周期不够长的 错误
+    }
+    // println!("longest string = {}", result); // 错误因第81行代码的函数调用，导致返回值的引用的生命周期不足，在此处无法使用result变量
 
 
 }
@@ -191,3 +200,42 @@ impl<T: Summary + Debug> FormatPrint for T {
     }
 }
 
+// 使用生命周期标注符号 'a，显式标注引用的生命周期
+fn longest<'a>(x: &'a str, y: &'a str) -> &'a str {
+    if x.len() > y.len() {
+        x
+    } else {
+        y
+    }
+}
+
+#[test]
+fn a_unit_test() {
+    println!("This is a unit test function");
+    assert!(2 + 2 == 4); // 使用assert 断言判断左右两个参数是否想等
+    // assert!(2 + 2 == 5, "这个断言语句不相等"); // 一个不相等的断言语句
+}
+
+#[test]
+#[should_panic(expected = "断言失败")] // 预期该单元测试应当发生 panic ,并且 期望的panic 中应包含 指定的文本内容，如果不满足条件则会测试失败
+fn a_unit_test_with_should_panic() {
+
+    assert_eq!(2 + 2, 4);
+    assert_eq!(2 + 2, 5, "断言失败，左值：{}, 右值: {}", 2 +2, 5);
+}
+
+#[test]
+fn use_result_as_test_return() -> Result<(), String> { //使用 Result 作为返回值的 test 不能加 #[should_panic] 属性，因为这个测试永远不会返回 panic
+    if 2 + 2  == 4 {
+        Ok(())
+    } else {
+        Err(String::from("use result as test return get an err result"))
+    }
+}
+
+#[test]
+#[ignore] // 加了这个属性之后，这个测试默认在运行 cargo test 命令时，不会被执行，如果要执行加了这个属性的测试， 需要使用 cargo test -- --ignored 命令
+fn a_ignore_test_function() {
+    println!("This is a ignore test");
+    assert_ne!(2 + 2 + 2, 4);
+}
