@@ -10,7 +10,10 @@ pub fn start() {
     let args: Vec<String> = env::args().collect();
     println!("程序启动参数：{:?}", args);
 
-    let config = Config::new(&args).unwrap_or_else(|err| {
+    // let config = Config::new(&args).unwrap_or_else(|err| {
+    //     eprintln!("Problem parsing arguments: {}", err); // 使用标准错误输出宏，打印程序错误信息
+    // 使用迭代器优化程序代码，直接传入迭代器到Config构造函数中
+    let config = Config::new(env::args()).unwrap_or_else(|err| {
         eprintln!("Problem parsing arguments: {}", err); // 使用标准错误输出宏，打印程序错误信息
         // 直接退出程序，不往后继续执行了
         process::exit(1);
@@ -46,15 +49,25 @@ struct Config {
 }
 impl Config {
     // 创建一个 Config 的构造函数
-    pub fn new (args: &[String]) -> Result<Config, &'static str> {
+    // pub fn new (args: &[String]) -> Result<Config, &'static str> {
+    // 使用 Args迭代器优化代码
+    pub fn new (mut args: std::env::Args) -> Result<Config, &'static str> {
         if args.len() < 4 {
             return Err("参数数量不足，请使用' cargo run query filename true|false '命令行启动程序");
         }
-        let query = args[1].clone();
-        let filename = args[2].clone();
+        // let query = args[1].clone();
+        // let filename = args[2].clone();
+
+        // 跳过第一个参数，取后面的参数
+        args.next();
+
+        // 使用迭代器获取每一个参数
+        let query = args.next().unwrap().trim().to_string();
+        let filename = args.next().unwrap().trim().to_string();
 
 
-        let case_sensitive = bool::from_str(&args[3].clone()).unwrap_or_else(|_| false); // 将字符串转换为布尔值, 存在没有参数时，下标越界的问题
+        // let case_sensitive = bool::from_str(&args[3].clone()).unwrap_or_else(|_| false); // 将字符串转换为布尔值, 存在没有参数时，下标越界的问题
+        let case_sensitive = bool::from_str(args.next().unwrap().as_str()).unwrap_or_else(|_| false);
         // let case_sensitive = env::var("CASE_INSENSITIVE").is_err(); // 从环境变量中获取该参数的值，如果环境变量中出现这个key 那么结果就为 true ，否则为 false
         Ok(Config{query, filename, case_sensitive})
     }
@@ -63,26 +76,32 @@ impl Config {
 fn search<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
     // vec![]
     // 遍历 contents
-    let mut results = Vec::new();
-    for line in  contents.lines() {
-        if line.contains(query) {
-            results.push(line.trim());
-        }
-    }
-    results
+    // let mut results = Vec::new();
+    // for line in  contents.lines() {
+    //     if line.contains(query) {
+    //         results.push(line.trim());
+    //     }
+    // }
+    // results
+
+    // 使用迭代器优化代码
+    contents.lines().filter(|line| line.contains(query)).collect()
 }
 
 fn search_case_insensitive<'a>(query: &str, contents: &'a str) -> Vec<&'a str> {
     // vec![]
     // 遍历 contents
-    let mut results = Vec::new();
-    let query = query.to_lowercase(); // 将 query 转换为小写，此处会返回一个全新的有所有权的变量
-    for line in  contents.lines() {
-        if line.to_lowercase().contains(&query) {
-            results.push(line.trim());
-        }
-    }
-    results
+    // let mut results = Vec::new();
+    // let query = query.to_lowercase(); // 将 query 转换为小写，此处会返回一个全新的有所有权的变量
+    // for line in  contents.lines() {
+    //     if line.to_lowercase().contains(&query) {
+    //         results.push(line.trim());
+    //     }
+    // }
+    // results
+
+    // 使用迭代器优化代码
+    contents.lines().filter(|line| line.to_lowercase().contains(&query.to_lowercase())).collect()
 }
 #[cfg(test)]
 mod tests {
